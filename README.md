@@ -1,91 +1,25 @@
----
-name: remote-dev
-description: Start Kanna for remote development via Claude Code and Codex from any device. Use when the user wants to work remotely, start Kanna, access the dev environment from another machine, or mentions "remote dev", "kanna", "work remotely", "remote coding", or "access from phone/tablet".
----
+# remote-dev
 
-# Remote Dev
+A Claude Code plugin with one skill. It starts, restarts, or stops a password-protected public [Kanna](https://github.com/jakemor/kanna) link, so you can drive Claude Code or Codex on this machine from a phone, tablet, or another computer.
 
-Start a Kanna instance so you can use Claude Code and Codex from any device — phone, tablet, another laptop — via a public URL with password protection.
+The link gives terminal access to the machine. The skill asks before it installs Bun or Kanna or opens the link.
 
-## Prerequisites
-
-Run these checks before starting. Install anything missing.
-
-### 1. Bun (required for Kanna)
+## Install
 
 ```bash
-bun --version
-# Install if missing:
-curl -fsSL https://bun.sh/install | bash
+claude plugin marketplace add wtfsayo/remote-dev
+claude plugin install remote-dev@remote-dev
 ```
 
-### 2. Kanna
+To try it from a local checkout instead: `claude --plugin-dir /path/to/remote-dev`.
 
-```bash
-kanna --version
-# Install or update:
-bun install -g kanna-code
-```
+## Use
 
-### 3. cloudflared (optional — Kanna bundles its own for `--share`)
+Ask Claude Code something like "start a Kanna share link so I can code from my phone", or run `/remote-dev:remote-dev`. It replies with the public URL, the local URL, and the password.
 
-Only needed if you want to tunnel other services independently.
+The agent instructions live in [SKILL.md](SKILL.md); edit that file to change behaviour.
 
-```bash
-cloudflared --version
-# Install if missing:
-brew install cloudflared
-```
+## Checks
 
-## Start
-
-```bash
-# Generate a password
-openssl rand -base64 24
-
-# Start Kanna from the project root
-cd <PROJECT_ROOT>
-kanna --password "<PASSWORD>" --share
-```
-
-Kanna starts on `localhost:3210`, creates a Cloudflare quick tunnel, and prints a public URL + QR code.
-
-**Reference**: https://github.com/jakemor/kanna
-
-## What You Get
-
-- **Claude Code** sessions in the browser — full terminal, file diffs, branch management
-- **Codex** sessions (if Codex CLI is installed)
-- **Embedded terminal** with PTY support (macOS/Linux)
-- **Branch switcher** — switch, push, sync from the sidebar
-- **Diff viewer** — browse file diffs, discard/ignore files, commit
-
-## Access
-
-| | |
-|---|---|
-| **Local** | `http://localhost:3210` |
-| **Public** | Printed on start (ephemeral — changes every restart) |
-| **Password** | Whatever you generated with `openssl rand -base64 24` |
-
-The public URL works from any device. Enter the password at the prompt.
-
-## Tips
-
-- Use `--no-open` to suppress the browser auto-open when starting from an agent
-- Use `--port <number>` if 3210 is taken
-- Kanna's tunnel URL is ephemeral. For a persistent URL, use `--cloudflared <token>` with a named Cloudflare tunnel
-
-## Stop
-
-```bash
-pkill -f kanna
-```
-
-## Restart (same password)
-
-```bash
-pkill -f kanna; sleep 1
-cd <PROJECT_ROOT>
-kanna --password "<PASSWORD>" --share --no-open &
-```
+- `scripts/check-skill.sh`: static checks on SKILL.md, README.md, and the manifests.
+- `evals/run.sh`: live trigger probes from `evals/triggers.json` (calls `claude -p`, costs a few cents).

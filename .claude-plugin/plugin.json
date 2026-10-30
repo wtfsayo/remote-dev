@@ -1,6 +1,6 @@
 {
   "name": "remote-dev",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Start Kanna for remote development via Claude Code and Codex from any device.",
   "author": {
     "name": "Sayo",
