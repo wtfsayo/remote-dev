@@ -1,0 +1,10 @@
+{
+  "name": "remote-dev",
+  "owner": { "name": "Sayo", "url": "https://github.com/wtfsayo" },
+  "metadata": {
+    "description": "Start, restart, or stop a password-protected public Kanna link to drive Claude Code/Codex on this machine from any device."
+  },
+  "plugins": [
+    { "name": "remote-dev", "source": "./", "description": "Start, restart, or stop a password-protected public Kanna link to drive Claude Code/Codex on this machine from any device." }
+  ]
+}

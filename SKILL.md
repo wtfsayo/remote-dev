@@ -1,91 +1,48 @@
 ---
 name: remote-dev
-description: Start Kanna for remote development via Claude Code and Codex from any device. Use when the user wants to work remotely, start Kanna, access the dev environment from another machine, or mentions "remote dev", "kanna", "work remotely", "remote coding", or "access from phone/tablet".
+description: "Kanna share link: start, restart, or stop a password-protected public Kanna URL so the user can drive Claude Code/Codex on this machine from a phone, tablet, or another computer."
 ---
 
 # Remote Dev
 
-Start a Kanna instance so you can use Claude Code and Codex from any device — phone, tablet, another laptop — via a public URL with password protection.
+Kanna serves Claude Code and Codex in a browser. `--share` publishes it on a Cloudflare quick tunnel, so anyone with the URL and password gets a terminal on this machine. Upstream: https://github.com/jakemor/kanna
+
+## Confirm
+
+Before any install or `--share`, tell the user that this installs Bun/Kanna (if missing) and opens a public URL with terminal access to this machine. Proceed only on the user's yes.
 
 ## Prerequisites
 
-Run these checks before starting. Install anything missing.
-
-### 1. Bun (required for Kanna)
-
-```bash
-bun --version
-# Install if missing:
-curl -fsSL https://bun.sh/install | bash
-```
-
-### 2. Kanna
-
-```bash
-kanna --version
-# Install or update:
-bun install -g kanna-code
-```
-
-### 3. cloudflared (optional — Kanna bundles its own for `--share`)
-
-Only needed if you want to tunnel other services independently.
-
-```bash
-cloudflared --version
-# Install if missing:
-brew install cloudflared
-```
+1. `bun --version` prints 1.3.5 or later. Missing: `curl -fsSL https://bun.sh/install | bash`. Older: `bun upgrade`.
+2. `kanna --version` succeeds. Missing: `bun install -g kanna-code`.
 
 ## Start
 
-```bash
-# Generate a password
-openssl rand -base64 24
+1. Preflight: `curl -fsS http://localhost:3210/health`. A response means Kanna is already running, and its password and share mode cannot be read back. Ask the user whether to restart it; on yes, follow Restart. A connection error means it is not running: continue.
+2. Generate the password: `openssl rand -base64 24`. Use the printed value as `<PASSWORD>`.
+3. Launch with the Bash tool's `run_in_background`:
+   ```bash
+   cd <PROJECT_ROOT> && kanna --password "<PASSWORD>" --share --no-open > "${TMPDIR:-/tmp}/kanna-share.log" 2>&1
+   ```
+4. Poll the log for up to 60 s:
+   ```bash
+   LOG="${TMPDIR:-/tmp}/kanna-share.log"
+   for i in $(seq 60); do grep -Eq 'trycloudflare\.com|already (running|starting)' "$LOG" && break; sleep 1; done
+   grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' "$LOG" | head -n1
+   grep -A1 'Local URL:' "$LOG" | tail -n1
+   ```
+   - `already running` or `already starting` in the log: another Kanna holds the single-instance lock, so nothing was shared. Ask the user whether to restart, as in step 1.
+   - Confirm `curl -fsS http://localhost:<port>/health` returns `{"ok":true…}`, with `<port>` taken from the `Local URL:` line.
+5. Done when the reply to the user contains the public URL, the local URL, and the password. If 60 s pass with no public URL, show the user `tail -n 40` of the log and stop.
 
-# Start Kanna from the project root
-cd <PROJECT_ROOT>
-kanna --password "<PASSWORD>" --share
-```
-
-Kanna starts on `localhost:3210`, creates a Cloudflare quick tunnel, and prints a public URL + QR code.
-
-**Reference**: https://github.com/jakemor/kanna
-
-## What You Get
-
-- **Claude Code** sessions in the browser — full terminal, file diffs, branch management
-- **Codex** sessions (if Codex CLI is installed)
-- **Embedded terminal** with PTY support (macOS/Linux)
-- **Branch switcher** — switch, push, sync from the sidebar
-- **Diff viewer** — browse file diffs, discard/ignore files, commit
-
-## Access
-
-| | |
-|---|---|
-| **Local** | `http://localhost:3210` |
-| **Public** | Printed on start (ephemeral — changes every restart) |
-| **Password** | Whatever you generated with `openssl rand -base64 24` |
-
-The public URL works from any device. Enter the password at the prompt.
-
-## Tips
-
-- Use `--no-open` to suppress the browser auto-open when starting from an agent
-- Use `--port <number>` if 3210 is taken
-- Kanna's tunnel URL is ephemeral. For a persistent URL, use `--cloudflared <token>` with a named Cloudflare tunnel
+The public URL changes on every start. Other flags: run `kanna --help` (named tunnel for a persistent URL: `--cloudflared <token>`).
 
 ## Stop
 
-```bash
-pkill -f kanna
-```
+Stopping cancels every running Kanna chat. If this session runs inside Kanna, tell the user that and get a yes first.
 
-## Restart (same password)
+Run `kanna stop`. Done when it prints `stopped` or `kanna isn't running` and exits 0. On exit 1, show the user its output: an older Kanna has to be stopped with Ctrl-C where it runs, or shutdown is still in progress.
 
-```bash
-pkill -f kanna; sleep 1
-cd <PROJECT_ROOT>
-kanna --password "<PASSWORD>" --share --no-open &
-```
+## Restart
+
+Run Stop; once `kanna stop` exits 0, run Start. Restart always yields a new password and a new public URL; give both to the user.

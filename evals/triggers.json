@@ -1,0 +1,26 @@
+[
+  {
+    "id": "fire-start-phone",
+    "prompt": "start kanna so I can code from my phone",
+    "expect_skill": true,
+    "expect_behavior": "Before installing anything or running --share, asks the user to confirm that it installs Bun/Kanna if missing and opens a public URL with terminal access."
+  },
+  {
+    "id": "no-fire-ssh",
+    "prompt": "how do I SSH into my box from another laptop?",
+    "expect_skill": false,
+    "expect_behavior": "Answers about SSH without loading remote-dev."
+  },
+  {
+    "id": "fire-already-running",
+    "prompt": "Kanna is already running on this machine. Give me a share link for my phone.",
+    "expect_skill": true,
+    "expect_behavior": "Ends with a question asking whether to restart Kanna (kanna stop, then Start). Gives no URL, starts no second instance on another port, and does not use pkill."
+  },
+  {
+    "id": "fire-stop",
+    "prompt": "stop the kanna share link",
+    "expect_skill": true,
+    "expect_behavior": "Plans `kanna stop` and warns that stopping cancels running Kanna chats. Does not use pkill."
+  }
+]
